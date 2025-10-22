@@ -74,76 +74,6 @@ Este notebook contiene el análisis exploratorio de las firmas espectrales:
    - Identificación de longitudes de onda con máxima diferenciación
    - Análisis de variabilidad intra e inter-grupo
 
-## 🤖 Modelos de Clasificación
-
-### Modelos Implementados (`Models_Cassification.ipynb`)
-
-El notebook desarrolla **tres clasificadores binarios** utilizando PCA para reducción de dimensionalidad:
-
-#### 1. **Clasificación: Plantas Sanas vs. Enfermas**
-
-**Objetivo**: Identificar si una planta está bajo estrés o es saludable
-
-**Modelos**:
-- **Regresión Logística** + PCA
-  - Hiperparámetros: penalty (L1, L2, elasticnet), C, solver
-  - Búsqueda exhaustiva con GridSearchCV
-  
-- **SVM** + PCA
-  - Kernels: linear, rbf, poly, sigmoid
-  - Optimización de C, gamma, degree
-
-**Datos**: Dataset completo excluyendo tratamiento Fus_EH
-
-#### 2. **Clasificación: Estrés Hídrico vs. Enfermedad Fúngica/Bacteriana**
-
-**Objetivo**: Distinguir entre estrés abiótico (sequía) y biótico (patógenos)
-
-**Clases**:
-- Hydric_Stress (E_Hidrico)
-- Fungus_Disease (Ralstonia + Fusarium)
-
-**Modelos**: Regresión Logística + PCA con optimización de hiperparámetros
-
-#### 3. **Clasificación: Ralstonia vs. Fusarium**
-
-**Objetivo**: Diferenciar entre infección bacteriana y fúngica
-
-**Modelos**:
-- Regresión Logística + PCA
-- SVM + PCA
-- Bagging Decision Tree + PCA
-  - Meta-estimador con múltiples árboles de decisión
-  - Bootstrap sampling para reducir varianza
-
-### 🔧 Pipeline de Modelado
-
-1. **Preprocesamiento**:
-   - Extracción de características espectrales (columnas 350-2500 nm)
-   - División train/test (80/10-20%, estratificada)
-
-2. **Reducción de Dimensionalidad**:
-   - PCA con 5-40 componentes principales
-   - Retiene información relevante, reduce overfitting
-
-3. **Optimización**:
-   - GridSearchCV con validación cruzada (5-fold)
-   - Métricas: accuracy, balanced accuracy
-   - Búsqueda de mejores hiperparámetros
-
-4. **Evaluación**:
-   - Matriz de confusión
-   - Classification report (precision, recall, f1-score)
-   - Accuracy en conjunto de prueba
-
-## 📊 Resultados y Métricas
-
-Cada modelo se evalúa con:
-- **Accuracy**: Proporción de predicciones correctas
-- **Precision**: De las predicciones positivas, cuántas son correctas
-- **Recall**: De los casos positivos reales, cuántos se detectan
-- **F1-Score**: Media armónica de precision y recall
-- **Confusion Matrix**: Visualización de predicciones vs. realidad
 
 ## 🛠️ Tecnologías Utilizadas
 
@@ -169,22 +99,5 @@ ipywidgets
 openpyxl  # Para leer archivos Excel
 ```
 
-## 🚀 Próximos Pasos
-
-- [ ] Análisis de importancia de longitudes de onda específicas
-- [ ] Implementación de modelos de clasificación multiclase
-- [ ] Desarrollo de modelos de regresión para severidad del estrés
-- [ ] Validación con datos de campo
-- [ ] Despliegue de modelo como herramienta de diagnóstico
-
-## 👥 Contribuciones
-
-Este proyecto es parte de una investigación académica sobre diagnóstico temprano de estrés en cultivos de banano mediante técnicas no destructivas de espectroscopía.
-
-## 📄 Licencia
-
-[Especificar licencia del proyecto]
-
----
 
 **Nota**: Los datos espectrales provienen de experimentos controlados en plantas de banano Williams sometidas a diferentes condiciones de estrés para estudiar sus respuestas fisiológicas y desarrollar herramientas de diagnóstico predictivo.
