@@ -75,14 +75,14 @@ class Mod_Productor():
                 'penalty': ['l1'],
                 'C': [0.001, 0.01, 0.1, 1, 10, 100],
                 'solver': ['saga'],
-                'class_weight': [None]  # Data already balanced by SMOTE
+                'class_weight': ['balanced']  # Data already balanced by SMOTE
             },
             # L2 regularization options
             {
                 'penalty': ['l2'],
                 'C': [0.001, 0.01, 0.1, 1, 10, 100],
                 'solver': ['lbfgs', 'saga'],
-                'class_weight': [None]  # Data already balanced by SMOTE
+                'class_weight': ['balanced']  # Data already balanced by SMOTE
             },
             # Elasticnet option (saga only)
             {
@@ -90,7 +90,7 @@ class Mod_Productor():
                 'C': [0.001, 0.01, 0.1, 1, 10, 100],
                 'solver': ['saga'],
                 'l1_ratio': [0.2, 0.5, 0.8],
-                'class_weight': [None]  # Data already balanced by SMOTE
+                'class_weight': ['balanced']  # Data already balanced by SMOTE
             }
         ]
         
