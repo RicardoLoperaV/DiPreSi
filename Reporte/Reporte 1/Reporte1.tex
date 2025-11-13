@@ -9,7 +9,7 @@
 % --- Paquetes para Elementos Visuales ---
 \usepackage{graphicx} 
 \usepackage{booktabs}                               
-
+\usepackage{float}
 % --- Información del Título ---
 \title{\textbf{Informe de Avance: Procesamiento y Análisis de Datos}}
 \author{Ricardo Esteban Lopera Vasco}
@@ -55,8 +55,29 @@ Para la realización del análisis se importaron las hojas como dataframes indiv
     \end{tabular}
 \end{table}
 
+Todas las muestras se dividen en 8 clases diferentes, las cuales representan distintos tipos de estrés aplicados a las plantas. El numero de muestras por clase son las siguientes:
+
+\begin{table}[h]
+    \centering
+    \caption{Distribución de Clases en el Conjunto de Datos}
+    \begin{tabular}{l c}
+    \toprule
+    \textbf{Clase} & \textbf{Número de Muestras} \\
+    \midrule
+    E\_Hidrico  &   478 \\
+    Control       & 461 \\
+    Fusarium      & 448 \\
+    Fus\_EH\_Ral    & 440 \\
+    Ral\_EH        & 436 \\
+    Fus\_EH        & 432 \\
+    Ralstonia     & 428 \\
+    Ral\_Fus       & 412 \\
+    \bottomrule
+    \end{tabular}
+\end{table}
+
 % -----------------------------------------------------------------
-\section{Avances en el Procesamiento (Logros)}
+\section{Avances en el Procesamiento}
 Hasta la fecha, se han completado las fases de ingestión, procesamiento de datos y producción preliminar de modelos. A continuación, se detallan las observaciones clave:
 
 \subsection{PCA y Reducción de Dimensionalidad}
@@ -92,10 +113,9 @@ Uno de los grandes problemas encontrados para el análisis y la producción de m
 
 Lo anterior demuestra que, aun reduciendo significativamente el número de dimensiones, se preserva una alta proporción de la varianza original. Esto garantiza la representatividad de los datos reducidos, asegurando que el entrenamiento de los modelos subsiguientes sea robusto y consistente con la estructura subyacente de la información.
 
-\begin{figure}[h!]
+\begin{figure}[H]
         \centering 
-
-        \includegraphics[width=0.8\textwidth]{PCA results.png} 
+        \includegraphics[width=0.8\textwidth]{Imagenes/PCA results.png} 
         \caption{Resultados del PCA en el día 7} 
         \label{fig:pca_results} 
 \end{figure}
@@ -105,53 +125,82 @@ El conjunto de datos presenta un desbalance de clases significativo, donde la cl
 
 Los resultados experimentales demostraron que las técnicas de sobremuestreo estadístico incrementaron el rendimiento de los modelos entre un 7\% y un 11\% en las métricas de exactitud (\textit{accuracy}) y sensibilidad (\textit{recall}). En contraste, la ponderación algorítmica no arrojó mejoras estadísticamente significativas. En consecuencia, se seleccionaron las técnicas de balanceo estadístico para las fases subsiguientes, debido a que proporcionaron una mayor estabilidad en la convergencia y optimizaron la identificación de la clase sana. 
 
-\begin{figure}[h!]
+\begin{figure}[H]
         \centering 
-        \includegraphics[width=1\textwidth]{SMOTE_Report.png} 
+        \includegraphics[width=1\textwidth]{Imagenes/SMOTE_Report.png} 
+
         \caption{Reporte SMOTE para el día 2} 
         \label{fig:smote_report} 
 \end{figure}
 
 
-\clearpage 
+\subsection{Eleccion del orden de la Reducción y balanceo}
 
+Se evaluó el orden de aplicación de las técnicas de reducción de dimensionalidad (PCA) y balanceo estadístico (SMOTE) para determinar su impacto en el rendimiento del modelo. Dos enfoques fueron comparados: aplicar PCA antes de SMOTE y aplicar SMOTE antes de PCA. Los resultados indicaron que aplicar PCA antes de SMOTE condujo a una mejora significativa en las métricas de desempeño del modelo final, incluyendo un aumento del 6\% en la exactitud y un 8\% en la sensibilidad. 
 
-\section{Modelo principal} 
+% Incluir dos figuras comparativas aquí si es posible
 
-El modelo principal posee dos partes, la primer parte son un conjunto de 15 modelos los cuales provienen de entrenar un modelo para cada dia, estos modelos son hechos con regresiones logisticas entrenadas con el siguiente pipeline: 
-\begin{itemize}
-    \item Reducción de dimensionalidad con PCA 
-    \item Balanceo de datos con SMOTE
-    \item Regresión logística con hiperparámetros ajustados con GridSearchCV
+\begin{figure}[H]
+        \centering 
+        \includegraphics[width=0.48\textwidth]{Imagenes/PCA_SMOTE.png}\hfill
+        \includegraphics[width=0.48\textwidth]{Imagenes/SMOTE_PCA.png}
+        \caption{Rendimiento del modelo con PCA antes de SMOTE} 
+        \label{fig:pca_smote}
+\end{figure}
+
+Este enfoque permitió que SMOTE generara datos sintéticos en un espacio de menor dimensionalidad, lo que facilitó una mejor representación de la distribución de las clases y redujo el riesgo de sobreajuste. En contraste, aplicar SMOTE antes de PCA resultó en una menor calidad de los datos sintéticos generados, afectando negativamente el rendimiento del modelo. Por lo tanto, se concluyó que la secuencia óptima es aplicar PCA antes de SMOTE para maximizar la eficacia del balanceo estadístico en conjuntos de datos de alta dimensionalidad.
+
+Una justificación adicional para esta elección es que al reducir la dimensionalidad primero, se eliminan características redundantes y ruido, lo que permite que SMOTE opere en un espacio más limpio y representativo. Esto mejora la calidad de los datos sintéticos generados, ya que SMOTE puede enfocarse en las características más relevantes para la clasificación, evitando la generación de muestras que no reflejen adecuadamente la distribución real de las clases. En resumen, aplicar PCA antes de SMOTE no solo optimiza el rendimiento del modelo, sino que también mejora la integridad y representatividad de los datos sintéticos generados.
+
+A continuación se presentan los resultados comparativos entre ambos enfoques, para cada uno de los modelos entrenados por dia:
+
+\begin{figure}[H]
+        \centering 
+        \includegraphics[width=0.8\textwidth]{Imagenes/ORDER.png} 
+
+        \caption{Comparación de modelos PCA-SMOTE vs SMOTE-PCA} 
+        \label{fig:comparison_models}
+\end{figure}
+
+\section{Arquitectura del Modelo Principal}
+
+La arquitectura del modelo propuesto se estructura en dos niveles: un conjunto de modelos base (Nivel 1) y un meta-modelo de ensamblaje (Nivel 2).
+
+El Nivel 1 consta de 15 clasificadores independientes, entrenados específicamente para los datos de cada día. Cada modelo base consiste en una Regresión Logística implementada mediante el siguiente pipeline:
+
+\begin{itemize} 
+    \item Reducción de dimensionalidad con PCA. 
+    \item Sobremuestreo sintético de la clase minoritaria con SMOTE. 
+    \item Ajuste de hiperparámetros de la Regresión Logística vía GridSearchCV. 
 \end{itemize}
-Este pipeline fue elegido por su simplicidad y buen desempeño en conjuntos de datos, pues modelos como Random Forest, SVM, XGBoost y bagging no mostraron mejoras significativas en las métricas de desempeño.
-Adicional a esto se decidio realizar primero PCA y luego SMOTE, pues al hacer SMOTE primero se generan datos sintéticos en un espacio de alta dimensionalidad, lo cual puede llevar a que los datos generados no representen bien la distribución real de los datos, generando asi data leakage.
 
+Se optó por esta arquitectura debido a su equilibrio entre simplicidad y rendimiento. En pruebas preliminares, algoritmos de mayor complejidad (p. ej., Random Forest, SVM, XGBoost y Bagging) no ofrecieron ventajas significativas en las métricas de evaluación.
 
+El Nivel 2 es un meta-modelo que integra las predicciones generadas por los 15 modelos base. Actualmente, se utiliza una Regresión Logística que pondera las salidas del Nivel 1, considerando el desempeño histórico y el día correspondiente a cada modelo. Se encuentra en fase de experimentación el uso de arquitecturas alternativas para este ensamblador (incluyendo redes neuronales), aunque hasta la fecha no se han observado mejoras sustanciales en el rendimiento.
 
+\begin{figure}[H]
+    \centering 
+    \includegraphics[width=0.8\textwidth]{Imagenes/MODEL.png} 
+    \caption{Arquitectura del Modelo de Ensamble} 
+    \label{fig:ensemble_model}
+\end{figure}
 
-\subsection{Completitud (Datos Faltantes)}
-Se identificó un patrón de valores nulos (\textit{missing values}) no aleatorios en las siguientes variables:
-
-\begin{itemize}
-    \item \textbf{Variable A:} 15\% de datos faltantes. Parece correlacionarse con usuarios inactivos.
-    \item \textbf{Variable B:} 40\% de datos faltantes. Se recomienda desestimar esta variable para el análisis multivariado.
-\end{itemize}
-
-\subsection{Consistencia y Validez}
-Existen registros que violan las reglas de negocio o la lógica física:
-\begin{enumerate}
-    \item \textbf{Valores Negativos:} Se encontraron tiempos de proceso negativos en el 2\% de los registros.
-    \item \textbf{Duplicidad:} Identificación de [Número] registros duplicados que inflan artificialmente las métricas.
-    \item \textbf{Errores de Formato:} Cadenas de texto en columnas numéricas debido a errores de digitación manual.
-\end{enumerate}
-
-\subsection{Outliers (Valores Atípicos)}
-Mediante el método del rango intercuartílico (IQR), se detectaron valores extremos en la variable [Nombre] que superan por 10 veces la desviación estándar, lo cual sugiere error de medición.
 
 % -----------------------------------------------------------------
-\section{Propuesta de Corrección y Próximos Pasos}
-Para mitigar los problemas descritos en la Sección 4, se propone el siguiente plan de acción inmediato:
+\section{Errores en los datos }
+Los errores evidenciados en el conjunto de datos se clasifican en las siguientes categorías:
+
+\subsection{Datos Faltantes}
+
+Se identificaron valores faltantes en varias hojas, particulamente hay 2 casos críticos:
+\begin{itemize}
+    \item \textbf{Hoja 0 (Dia 0):} En cada hoja deben haber 240 registros y 30 plantas por tratamiento, sin embargo, en la hoja 0 faltan las 30 plantas correspondientes a Fus\_EH.  
+    \item \textbf{Hoja 15 (Dia 15):} En la hoja falta el 29.2\% de los datos. correspondientes a: 12 datos de Ralstonia, 23 datos de Ral\_EH, 1 de Fus\_EH y 4 de Fus\_EH\_Ral.
+\end{itemize}
+
+\subsection{Datos no etiquetados}
+
+De las 15 hojas analizadas
 
 \begin{enumerate}
     \item \textbf{Imputación:} Utilizar la media/mediana para rellenar los vacíos en la Variable A, dado que el porcentaje es bajo (<20\%).
