@@ -1,0 +1,165 @@
+\documentclass[12pt, letterpaper]{article}
+
+% --- Paquetes de Configuración ---
+\usepackage[utf8]{inputenc}
+\usepackage[spanish, es-tabla]{babel} 
+\usepackage{geometry}
+\geometry{left=2.5cm, right=2.5cm, top=2.5cm, bottom=2.5cm}
+
+% --- Paquetes para Elementos Visuales ---
+\usepackage{graphicx} 
+\usepackage{booktabs}                               
+
+% --- Información del Título ---
+\title{\textbf{Informe de Avance: Procesamiento y Análisis de Datos}}
+\author{Ricardo Esteban Lopera Vasco}
+\date{\today}
+
+\begin{document}
+
+% Portada
+\maketitle  
+\newpage
+
+% Tabla de Contenidos
+\tableofcontents
+\newpage
+
+% -----------------------------------------------------------------
+\section{Introducción y Objetivos}
+El propósito de este informe es documentar la integridad y calidad de los datos recolectados para el proyecto, además de detallar los avances realizados en la producción de modelos y análisis preliminares.  
+
+Los objetivos específicos de este reporte son:
+\begin{itemize}
+    \item Describir avances en los modelos y análisis realizados hasta la fecha.   
+    \item Presentar las métricas descriptivas preliminares obtenidas.
+    \item Identificar y categorizar los errores sistemáticos en la captura de datos.
+\end{itemize}
+
+% -----------------------------------------------------------------
+\section{Descripción del Conjunto de Datos}
+La fuente de información consta de un conjunto de datos distribuido en 15 hojas, las cuales contienen entre 230 y 240 registros de plantas. El conjunto incluye 2150 variables correspondientes a longitudes de onda en el rango de 350 nm a 2500 nm.
+Para la realización del análisis se importaron las hojas como dataframes individuales.
+
+\begin{table}[h]
+    \centering
+    \caption{Diccionario de Variables Principales}
+    \begin{tabular}{l l p{6cm}}
+    \toprule
+    \textbf{Variable} & \textbf{Tipo de Dato} & \textbf{Descripción} \\
+    \midrule
+    Tratamiento & Cadena (str) & Nombre del estrés aplicado a la planta \\
+    {[$350-2500$ nm]} & Numérico (Float) & Indica la reflectancia en cada longitud de onda.\\
+    Planta & Numérico (Int{[1:30]}) & Identificador único de cada planta. \\
+    \bottomrule
+    \end{tabular}
+\end{table}
+
+% -----------------------------------------------------------------
+\section{Avances en el Procesamiento (Logros)}
+Hasta la fecha, se han completado las fases de ingestión, procesamiento de datos y producción preliminar de modelos. A continuación, se detallan las observaciones clave:
+
+\subsection{PCA y Reducción de Dimensionalidad}
+Uno de los grandes problemas encontrados para el análisis y la producción de modelos fue la alta dimensionalidad del conjunto de datos. Se aplicó Análisis de Componentes Principales (PCA) para reducir la dimensionalidad y se encontró que las primeras 3 componentes explican en promedio el 96.68\% de la varianza total; sin embargo, hay dataframes donde el porcentaje de explicabilidad varía significativamente.
+
+\begin{table}[h]
+    \centering
+    \caption{Varianza total explicada por el PCA (3 componentes) para cada subconjunto de datos.}
+    \label{tab:pca_variance_3comp}
+    \begin{tabular}{l c}
+    \toprule
+    \textbf{Modelo (DataFrame)} & \textbf{Varianza Explicada (\%)} \\
+    \midrule
+    df0 & 95.03\% \\
+    df1 & 89.76\% \\
+    df2 & 97.47\% \\
+    df3 & 91.96\% \\
+    df4 & 90.82\% \\
+    df5 & 93.50\% \\
+    df6 & 95.76\% \\
+    df7 & 98.42\% \\
+    df8 & 99.28\% \\
+    df9 & 99.09\% \\
+    df10 & 99.34\% \\
+    df11 & 99.14\% \\
+    df12 & 99.40\% \\
+    df13 & 98.91\% \\
+    df14 & 99.52\% \\
+    df15 & 99.43\% \\
+    \bottomrule
+    \end{tabular}
+\end{table}
+
+Lo anterior demuestra que, aun reduciendo significativamente el número de dimensiones, se preserva una alta proporción de la varianza original. Esto garantiza la representatividad de los datos reducidos, asegurando que el entrenamiento de los modelos subsiguientes sea robusto y consistente con la estructura subyacente de la información.
+
+\begin{figure}[h!]
+        \centering 
+
+        \includegraphics[width=0.8\textwidth]{PCA results.png} 
+        \caption{Resultados del PCA en el día 7} 
+        \label{fig:pca_results} 
+\end{figure}
+
+\subsection{Balanceo algorítmico de datos vs Balanceo estadístico}
+El conjunto de datos presenta un desbalance de clases significativo, donde la clase minoritaria (plantas sanas) representa únicamente el 12\% del total de las muestras. Con el objetivo de mitigar este sesgo, se evaluaron estrategias de ponderación algorítmica (ajuste de pesos mediante el hiperparámetro \textit{balanced}) y técnicas de generación de datos sintéticos (SMOTE y ADASYN). 
+
+Los resultados experimentales demostraron que las técnicas de sobremuestreo estadístico incrementaron el rendimiento de los modelos entre un 7\% y un 11\% en las métricas de exactitud (\textit{accuracy}) y sensibilidad (\textit{recall}). En contraste, la ponderación algorítmica no arrojó mejoras estadísticamente significativas. En consecuencia, se seleccionaron las técnicas de balanceo estadístico para las fases subsiguientes, debido a que proporcionaron una mayor estabilidad en la convergencia y optimizaron la identificación de la clase sana. 
+
+\begin{figure}[h!]
+        \centering 
+        \includegraphics[width=1\textwidth]{SMOTE_Report.png} 
+        \caption{Reporte SMOTE para el día 2} 
+        \label{fig:smote_report} 
+\end{figure}
+
+
+\clearpage 
+
+
+\section{Modelo principal} 
+
+El modelo principal posee dos partes, la primer parte son un conjunto de 15 modelos los cuales provienen de entrenar un modelo para cada dia, estos modelos son hechos con regresiones logisticas entrenadas con el siguiente pipeline: 
+\begin{itemize}
+    \item Reducción de dimensionalidad con PCA 
+    \item Balanceo de datos con SMOTE
+    \item Regresión logística con hiperparámetros ajustados con GridSearchCV
+\end{itemize}
+Este pipeline fue elegido por su simplicidad y buen desempeño en conjuntos de datos, pues modelos como Random Forest, SVM, XGBoost y bagging no mostraron mejoras significativas en las métricas de desempeño.
+Adicional a esto se decidio realizar primero PCA y luego SMOTE, pues al hacer SMOTE primero se generan datos sintéticos en un espacio de alta dimensionalidad, lo cual puede llevar a que los datos generados no representen bien la distribución real de los datos, generando asi data leakage.
+
+
+
+
+\subsection{Completitud (Datos Faltantes)}
+Se identificó un patrón de valores nulos (\textit{missing values}) no aleatorios en las siguientes variables:
+
+\begin{itemize}
+    \item \textbf{Variable A:} 15\% de datos faltantes. Parece correlacionarse con usuarios inactivos.
+    \item \textbf{Variable B:} 40\% de datos faltantes. Se recomienda desestimar esta variable para el análisis multivariado.
+\end{itemize}
+
+\subsection{Consistencia y Validez}
+Existen registros que violan las reglas de negocio o la lógica física:
+\begin{enumerate}
+    \item \textbf{Valores Negativos:} Se encontraron tiempos de proceso negativos en el 2\% de los registros.
+    \item \textbf{Duplicidad:} Identificación de [Número] registros duplicados que inflan artificialmente las métricas.
+    \item \textbf{Errores de Formato:} Cadenas de texto en columnas numéricas debido a errores de digitación manual.
+\end{enumerate}
+
+\subsection{Outliers (Valores Atípicos)}
+Mediante el método del rango intercuartílico (IQR), se detectaron valores extremos en la variable [Nombre] que superan por 10 veces la desviación estándar, lo cual sugiere error de medición.
+
+% -----------------------------------------------------------------
+\section{Propuesta de Corrección y Próximos Pasos}
+Para mitigar los problemas descritos en la Sección 4, se propone el siguiente plan de acción inmediato:
+
+\begin{enumerate}
+    \item \textbf{Imputación:} Utilizar la media/mediana para rellenar los vacíos en la Variable A, dado que el porcentaje es bajo (<20\%).
+    \item \textbf{Filtrado:} Eliminar los registros con tiempos negativos y duplicados exactos.
+    \item \textbf{Validación:} Contactar al departamento de origen para verificar si los \textit{outliers} son fenómenos reales o errores de sensor.
+\end{enumerate}
+
+\section{Conclusión}
+Aunque el conjunto de datos presenta desafíos en términos de completitud en variables secundarias, las variables críticas muestran una solidez suficiente para continuar con el análisis una vez aplicadas las técnicas de limpieza descritas.
+
+\end{document}

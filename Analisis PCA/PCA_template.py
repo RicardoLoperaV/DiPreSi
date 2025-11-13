@@ -148,32 +148,29 @@ class PCA_Analysis():
         return pca_df
 
     def PCA_3D_noplot(self):
-        pca = PCA(n_components= 3)
-
-        # The wavelength columns are from index 3 to the end
+        pca = PCA(n_components=3)
         wavelength_data = self.data.iloc[:, 3:]
-
-        # Fit AND transform the data
         pca_components_3d = pca.fit_transform(wavelength_data)
-
-        # Check explained variance
+        
         explained_variance = pca.explained_variance_ratio_
         print(f"Explained variance by PC1: {explained_variance[0]:.2%}")
         print(f"Explained variance by PC2: {explained_variance[1]:.2%}")
         print(f"Explained variance by PC3: {explained_variance[2]:.2%}")
         print(f"Total explained variance: {explained_variance.sum():.2%}")
-
-        # Create a DataFrame with PCA results
+        
         pca_df = pd.DataFrame(
             data=pca_components_3d,
             columns=['PC1', 'PC2', 'PC3']
         )
-
-        # Add categorical columns for plotting
-        pca_df['Tratamiento'] = self.data['Tratamiento'].values
-        pca_df['Planta'] = self.data['Planta'].values
-
-        # Reorder columns to put Tratamiento and Planta first
-        pca_df = pca_df[['Tratamiento', 'Planta', 'PC1', 'PC2', 'PC3']]
+        
+        # Check if categorical columns exist before adding them
+        if 'Tratamiento' in self.data.columns:
+            pca_df['Tratamiento'] = self.data['Tratamiento'].values
+        if 'Planta' in self.data.columns:
+            pca_df['Planta'] = self.data['Planta'].values
+        
+        # Reorder only if columns were added
+        available_cols = pca_df.columns.tolist()
+        pca_df = pca_df[available_cols[:2] + ['PC1', 'PC2', 'PC3']]
         
         return pca_df
