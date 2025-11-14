@@ -8,8 +8,10 @@
 
 % --- Paquetes para Elementos Visuales ---
 \usepackage{graphicx} 
-\usepackage{booktabs}                               
+\usepackage{booktabs}
 \usepackage{float}
+\usepackage{subcaption}
+
 % --- Información del Título ---
 \title{\textbf{Informe de Avance: Procesamiento y Análisis de Datos}}
 \author{Ricardo Esteban Lopera Vasco}
@@ -27,35 +29,39 @@
 
 % -----------------------------------------------------------------
 \section{Introducción y Objetivos}
-El propósito de este informe es documentar la integridad y calidad de los datos recolectados para el proyecto, además de detallar los avances realizados en la producción de modelos y análisis preliminares.  
+El propósito de este informe es documentar la integridad y calidad de los datos recolectados para el proyecto, además de detallar los avances realizados en el \textbf{desarrollo} de modelos y los análisis preliminares.  
 
 Los objetivos específicos de este reporte son:
 \begin{itemize}
-    \item Describir avances en los modelos y análisis realizados hasta la fecha.   
+    \item Describir los avances en los modelos y análisis realizados hasta la fecha.   
     \item Presentar las métricas descriptivas preliminares obtenidas.
     \item Identificar y categorizar los errores sistemáticos en la captura de datos.
 \end{itemize}
 
+
+
+
+
 % -----------------------------------------------------------------
 \section{Descripción del Conjunto de Datos}
 La fuente de información consta de un conjunto de datos distribuido en 15 hojas, las cuales contienen entre 230 y 240 registros de plantas. El conjunto incluye 2150 variables correspondientes a longitudes de onda en el rango de 350 nm a 2500 nm.
-Para la realización del análisis se importaron las hojas como dataframes individuales.
+Para \textbf{realizar} el análisis, se importaron las hojas como \textit{dataframes} individuales.
 
 \begin{table}[h]
     \centering
     \caption{Diccionario de Variables Principales}
-    \begin{tabular}{l l p{6cm}}
+    \begin{tabular}{l l p{6.5cm}}
     \toprule
     \textbf{Variable} & \textbf{Tipo de Dato} & \textbf{Descripción} \\
     \midrule
-    Tratamiento & Cadena (str) & Nombre del estrés aplicado a la planta \\
-    {[$350-2500$ nm]} & Numérico (Float) & Indica la reflectancia en cada longitud de onda.\\
-    Planta & Numérico (Int{[1:30]}) & Identificador único de cada planta. \\
+    Tratamiento & Cadena (str) & Nombre del estrés aplicado a la planta. \\
+    {[$350-2500$ nm]} & Numérico (Float) & Indica la reflectancia en cada longitud de onda. \\
+    Planta & Numérico (Int) & Identificador único de cada planta (rango 1 a 30). \\
     \bottomrule
     \end{tabular}
 \end{table}
 
-Todas las muestras se dividen en 8 clases diferentes, las cuales representan distintos tipos de estrés aplicados a las plantas. El numero de muestras por clase son las siguientes:
+Todas las muestras se dividen en 8 clases, las cuales representan distintos tipos de estrés aplicados a las plantas. El \textbf{número} de muestras por clase \textbf{se detalla a continuación}:
 
 \begin{table}[h]
     \centering
@@ -64,24 +70,69 @@ Todas las muestras se dividen en 8 clases diferentes, las cuales representan dis
     \toprule
     \textbf{Clase} & \textbf{Número de Muestras} \\
     \midrule
-    E\_Hidrico  &   478 \\
-    Control       & 461 \\
-    Fusarium      & 448 \\
-    Fus\_EH\_Ral    & 440 \\
-    Ral\_EH        & 436 \\
-    Fus\_EH        & 432 \\
-    Ralstonia     & 428 \\
-    Ral\_Fus       & 412 \\
+    E\_Hidrico   &   478 \\
+    Control      &   461 \\
+    Fusarium     &   448 \\
+    Fus\_EH\_Ral   &   440 \\
+    Ral\_EH      &   436 \\
+    Fus\_EH      &   432 \\
+    Ralstonia    &   428 \\
+    Ral\_Fus     &   412 \\
     \bottomrule
     \end{tabular}
 \end{table}
 
 % -----------------------------------------------------------------
+
+
+
+
+
+
+
+\section{Problemáticas Identificadas en los Datos}
+Los \textbf{problemas} evidenciados en el conjunto de datos se clasifican en las siguientes categorías:
+
+\subsection{Datos Faltantes}
+
+Se identificaron valores faltantes en varias hojas; \textbf{particularmente}, existen dos casos críticos:
+\begin{itemize}
+    \item \textbf{Hoja 0 (Día 0):} En cada hoja \textbf{debería haber} 240 registros (30 plantas por tratamiento); sin embargo, en la hoja 0 faltan las 30 plantas correspondientes a \textbf{Fus\_EH}.
+    \item \textbf{Hoja 15 (Día 15):} En la hoja falta el 29.2\% de los datos, \textbf{correspondientes} a: 12 datos de \textbf{Ralstonia}, 23 de \textbf{Ral\_EH}, 1 de \textbf{Fus\_EH} y 4 de \textbf{Fus\_EH\_Ral}.
+\end{itemize}
+
+En el resto de las hojas, el porcentaje de datos faltantes es inferior al 1\%, por lo cual no se considera crítico para el análisis. Sin embargo, se resalta que en cada hoja \textbf{se observan} inconsistencias y datos faltantes. 
+
+\subsection{Datos No Etiquetados}
+
+De las 15 hojas analizadas, se encontraron 10 hojas (66.6\% del total) sin la etiqueta "Planta"; \textbf{únicamente} las hojas 6, 7, 8, 12 y 13 poseen esta etiqueta. Estas etiquetas son cruciales para el entrenamiento supervisado, pues conocer el \textbf{número} de la planta es necesario para identificar cada muestra de manera única y \textbf{generar} conjuntos de entrenamiento y prueba \textbf{disjuntos} (sin solapamiento).
+
+Es importante resaltar que esta etiqueta del \textbf{número} de planta no se puede inferir de las otras hojas, ya que, debido a la falta de uniformidad en el \textbf{número} de datos por hoja, no es posible realizar un mapeo directo entre las hojas que poseen la etiqueta y las que no.
+
+\subsection{Inconsistencias en las Etiquetas de Clase}
+
+En las hojas 4 y 10 se encontraron \textbf{dos} datos que no poseen etiqueta de "Tratamiento". \textbf{Tampoco existe} un registro \textbf{guía} de la \textbf{categoría} a la que podrían pertenecer estas muestras, lo cual dificulta su clasificación y uso en el entrenamiento de modelos supervisados.
+
+\begin{figure}[H]
+        \centering 
+        \includegraphics[width=0.8\textwidth]{Imagenes/HOJA0.png} 
+        \caption{Evidencia hoja 0 con columna "Planta" faltante} 
+        \label{fig:missing_treatment}
+\end{figure}
+
+
+
+
+
+
+
+
+
 \section{Avances en el Procesamiento}
-Hasta la fecha, se han completado las fases de ingestión, procesamiento de datos y producción preliminar de modelos. A continuación, se detallan las observaciones clave:
+Hasta la fecha, se han completado las fases de ingestión, procesamiento de datos y \textbf{desarrollo} preliminar de modelos. A continuación, se detallan las observaciones clave:
 
 \subsection{PCA y Reducción de Dimensionalidad}
-Uno de los grandes problemas encontrados para el análisis y la producción de modelos fue la alta dimensionalidad del conjunto de datos. Se aplicó Análisis de Componentes Principales (PCA) para reducir la dimensionalidad y se encontró que las primeras 3 componentes explican en promedio el 96.68\% de la varianza total; sin embargo, hay dataframes donde el porcentaje de explicabilidad varía significativamente.
+Uno de los \textbf{principales desafíos} encontrados para el análisis y el \textbf{desarrollo} de modelos fue la alta dimensionalidad del conjunto de datos. Se aplicó Análisis de Componentes Principales (PCA) para reducir la dimensionalidad y se encontró que las primeras 3 componentes explican, en promedio, el 96.68\% de la varianza total; sin embargo, existen \textit{dataframes} donde el porcentaje de \textbf{varianza explicada} varía significativamente.
 
 \begin{table}[h]
     \centering
@@ -89,7 +140,7 @@ Uno de los grandes problemas encontrados para el análisis y la producción de m
     \label{tab:pca_variance_3comp}
     \begin{tabular}{l c}
     \toprule
-    \textbf{Modelo (DataFrame)} & \textbf{Varianza Explicada (\%)} \\
+    \textbf{Modelo (\textit{DataFrame})} & \textbf{Varianza Explicada (\%)} \\
     \midrule
     df0 & 95.03\% \\
     df1 & 89.76\% \\
@@ -120,7 +171,7 @@ Lo anterior demuestra que, aun reduciendo significativamente el número de dimen
         \label{fig:pca_results} 
 \end{figure}
 
-\subsection{Balanceo algorítmico de datos vs Balanceo estadístico}
+\subsection{Balanceo algorítmico de datos vs. Balanceo estadístico}
 El conjunto de datos presenta un desbalance de clases significativo, donde la clase minoritaria (plantas sanas) representa únicamente el 12\% del total de las muestras. Con el objetivo de mitigar este sesgo, se evaluaron estrategias de ponderación algorítmica (ajuste de pesos mediante el hiperparámetro \textit{balanced}) y técnicas de generación de datos sintéticos (SMOTE y ADASYN). 
 
 Los resultados experimentales demostraron que las técnicas de sobremuestreo estadístico incrementaron el rendimiento de los modelos entre un 7\% y un 11\% en las métricas de exactitud (\textit{accuracy}) y sensibilidad (\textit{recall}). En contraste, la ponderación algorítmica no arrojó mejoras estadísticamente significativas. En consecuencia, se seleccionaron las técnicas de balanceo estadístico para las fases subsiguientes, debido a que proporcionaron una mayor estabilidad en la convergencia y optimizaron la identificación de la clase sana. 
@@ -128,37 +179,44 @@ Los resultados experimentales demostraron que las técnicas de sobremuestreo est
 \begin{figure}[H]
         \centering 
         \includegraphics[width=1\textwidth]{Imagenes/SMOTE_Report.png} 
-
         \caption{Reporte SMOTE para el día 2} 
         \label{fig:smote_report} 
 \end{figure}
 
 
-\subsection{Eleccion del orden de la Reducción y balanceo}
+\subsection{Elección del Orden de Reducción y Balanceo}
 
-Se evaluó el orden de aplicación de las técnicas de reducción de dimensionalidad (PCA) y balanceo estadístico (SMOTE) para determinar su impacto en el rendimiento del modelo. Dos enfoques fueron comparados: aplicar PCA antes de SMOTE y aplicar SMOTE antes de PCA. Los resultados indicaron que aplicar PCA antes de SMOTE condujo a una mejora significativa en las métricas de desempeño del modelo final, incluyendo un aumento del 6\% en la exactitud y un 8\% en la sensibilidad. 
-
-% Incluir dos figuras comparativas aquí si es posible
+Se evaluó el orden de aplicación de las técnicas de reducción de dimensionalidad (PCA) y balanceo estadístico (SMOTE) para determinar su impacto en el rendimiento del modelo. \textbf{Se compararon dos enfoques}: aplicar PCA antes de SMOTE y aplicar SMOTE antes de PCA. Los resultados indicaron que aplicar PCA \textbf{previo a} SMOTE condujo a una mejora significativa en las métricas de desempeño del modelo final, incluyendo un aumento del 6\% en la exactitud y un 8\% en la sensibilidad. 
 
 \begin{figure}[H]
-        \centering 
-        \includegraphics[width=0.48\textwidth]{Imagenes/PCA_SMOTE.png}\hfill
-        \includegraphics[width=0.48\textwidth]{Imagenes/SMOTE_PCA.png}
-        \caption{Rendimiento del modelo con PCA antes de SMOTE} 
-        \label{fig:pca_smote}
+    \centering
+    \begin{subfigure}[b]{0.48\textwidth}
+        \centering
+        \includegraphics[width=\textwidth]{Imagenes/PCA_SMOTE.png}
+        \caption{PCA $\rightarrow$ SMOTE (Exactitud: 91.00\%)}
+        \label{fig:pca_before_smote}
+    \end{subfigure}
+    \hfill
+    \begin{subfigure}[b]{0.48\textwidth}
+        \centering
+        \includegraphics[width=\textwidth]{Imagenes/SMOTE_PCA.png}
+        \caption{SMOTE $\rightarrow$ PCA (Exactitud: 88.1\%)}
+        \label{fig:smote_before_pca}
+    \end{subfigure}
+    \caption{Comparación del rendimiento del modelo según el orden de aplicación de PCA y SMOTE.}
+    \label{fig:pca_smote_comparison}
 \end{figure}
 
 Este enfoque permitió que SMOTE generara datos sintéticos en un espacio de menor dimensionalidad, lo que facilitó una mejor representación de la distribución de las clases y redujo el riesgo de sobreajuste. En contraste, aplicar SMOTE antes de PCA resultó en una menor calidad de los datos sintéticos generados, afectando negativamente el rendimiento del modelo. Por lo tanto, se concluyó que la secuencia óptima es aplicar PCA antes de SMOTE para maximizar la eficacia del balanceo estadístico en conjuntos de datos de alta dimensionalidad.
 
-Una justificación adicional para esta elección es que al reducir la dimensionalidad primero, se eliminan características redundantes y ruido, lo que permite que SMOTE opere en un espacio más limpio y representativo. Esto mejora la calidad de los datos sintéticos generados, ya que SMOTE puede enfocarse en las características más relevantes para la clasificación, evitando la generación de muestras que no reflejen adecuadamente la distribución real de las clases. En resumen, aplicar PCA antes de SMOTE no solo optimiza el rendimiento del modelo, sino que también mejora la integridad y representatividad de los datos sintéticos generados.
+Una justificación adicional para esta elección es que, al reducir la dimensionalidad primero, se eliminan características redundantes y ruido, lo que permite que SMOTE opere en un espacio más limpio y representativo. Esto mejora la calidad de los datos sintéticos generados, ya que SMOTE puede enfocarse en las características más relevantes para la clasificación, evitando la generación de muestras que no reflejen adecuadamente la distribución real de las clases. En resumen, aplicar PCA antes de SMOTE no solo optimiza el rendimiento del modelo, sino que también mejora la integridad y representatividad de los datos sintéticos generados.
 
-A continuación se presentan los resultados comparativos entre ambos enfoques, para cada uno de los modelos entrenados por dia:
+A continuación, se presentan los resultados comparativos entre ambos enfoques para cada uno de los modelos entrenados por \textbf{día}:
 
 \begin{figure}[H]
         \centering 
         \includegraphics[width=0.8\textwidth]{Imagenes/ORDER.png} 
-
-        \caption{Comparación de modelos PCA-SMOTE vs SMOTE-PCA} 
+        \caption{Comparación de modelos PCA-SMOTE vs. SMOTE-PCA} 
         \label{fig:comparison_models}
 \end{figure}
 
@@ -166,7 +224,7 @@ A continuación se presentan los resultados comparativos entre ambos enfoques, p
 
 La arquitectura del modelo propuesto se estructura en dos niveles: un conjunto de modelos base (Nivel 1) y un meta-modelo de ensamblaje (Nivel 2).
 
-El Nivel 1 consta de 15 clasificadores independientes, entrenados específicamente para los datos de cada día. Cada modelo base consiste en una Regresión Logística implementada mediante el siguiente pipeline:
+El Nivel 1 consta de 15 clasificadores independientes, entrenados específicamente para los datos de cada día. Cada modelo base consiste en una Regresión Logística implementada mediante el siguiente \textit{pipeline}:
 
 \begin{itemize} 
     \item Reducción de dimensionalidad con PCA. 
@@ -181,34 +239,11 @@ El Nivel 2 es un meta-modelo que integra las predicciones generadas por los 15 m
 \begin{figure}[H]
     \centering 
     \includegraphics[width=0.8\textwidth]{Imagenes/MODEL.png} 
-    \caption{Arquitectura del Modelo de Ensamble} 
+    \caption{Arquitectura del Modelo} 
     \label{fig:ensemble_model}
 \end{figure}
 
 
 % -----------------------------------------------------------------
-\section{Errores en los datos }
-Los errores evidenciados en el conjunto de datos se clasifican en las siguientes categorías:
-
-\subsection{Datos Faltantes}
-
-Se identificaron valores faltantes en varias hojas, particulamente hay 2 casos críticos:
-\begin{itemize}
-    \item \textbf{Hoja 0 (Dia 0):} En cada hoja deben haber 240 registros y 30 plantas por tratamiento, sin embargo, en la hoja 0 faltan las 30 plantas correspondientes a Fus\_EH.  
-    \item \textbf{Hoja 15 (Dia 15):} En la hoja falta el 29.2\% de los datos. correspondientes a: 12 datos de Ralstonia, 23 datos de Ral\_EH, 1 de Fus\_EH y 4 de Fus\_EH\_Ral.
-\end{itemize}
-
-\subsection{Datos no etiquetados}
-
-De las 15 hojas analizadas
-
-\begin{enumerate}
-    \item \textbf{Imputación:} Utilizar la media/mediana para rellenar los vacíos en la Variable A, dado que el porcentaje es bajo (<20\%).
-    \item \textbf{Filtrado:} Eliminar los registros con tiempos negativos y duplicados exactos.
-    \item \textbf{Validación:} Contactar al departamento de origen para verificar si los \textit{outliers} son fenómenos reales o errores de sensor.
-\end{enumerate}
-
-\section{Conclusión}
-Aunque el conjunto de datos presenta desafíos en términos de completitud en variables secundarias, las variables críticas muestran una solidez suficiente para continuar con el análisis una vez aplicadas las técnicas de limpieza descritas.
 
 \end{document}
