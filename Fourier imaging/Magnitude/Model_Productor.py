@@ -102,30 +102,30 @@ class PlantCNN(nn.Module):
         # Convolutional layers
         self.conv_layers = nn.Sequential(
             # Block 1
-            nn.Conv2d(3, 32, kernel_size=3, padding=1),
+            nn.Conv2d(3, 32, kernel_size=3, padding=0),
             nn.BatchNorm2d(32),
             nn.ReLU(),
-            nn.Conv2d(32, 32, kernel_size=3, padding=1),
+            nn.Conv2d(32, 32, kernel_size=3, padding=0),
             nn.BatchNorm2d(32),
             nn.ReLU(),
             nn.MaxPool2d(2, 2),
             nn.Dropout2d(0.25),
             
             # Block 2
-            nn.Conv2d(32, 64, kernel_size=3, padding=1),
+            nn.Conv2d(32, 64, kernel_size=3, padding=0),
             nn.BatchNorm2d(64),
             nn.ReLU(),
-            nn.Conv2d(64, 64, kernel_size=3, padding=1),
+            nn.Conv2d(64, 64, kernel_size=3, padding=0),
             nn.BatchNorm2d(64),
             nn.ReLU(),
             nn.MaxPool2d(2, 2),
             nn.Dropout2d(0.25),
             
             # Block 3
-            nn.Conv2d(64, 128, kernel_size=3, padding=1),
+            nn.Conv2d(64, 128, kernel_size=3, padding=0),
             nn.BatchNorm2d(128),
             nn.ReLU(),
-            nn.Conv2d(128, 128, kernel_size=3, padding=1),
+            nn.Conv2d(128, 128, kernel_size=3, padding=0),
             nn.BatchNorm2d(128),
             nn.ReLU(),
             nn.MaxPool2d(2, 2),
@@ -588,20 +588,10 @@ class CNNModelProductor:
         )
         
         # Save model
-        if save_dir:
-            os.makedirs(save_dir, exist_ok=True)
-            self.save_model(os.path.join(save_dir, 'plant_cnn_model.pth'))
+        if save_dir is not None:
+            os.makedirs(save_dir, exist_ok = True)
+            self.save_model(os.path.join(save_dir, f'cnn_model_D{self.days}.pth'))
             
-            # Save results to CSV
-            results_df = pd.DataFrame({
-                'sample_id': results['sample_ids'],
-                'true_label': results['labels'],
-                'predicted_label': results['predictions'],
-                'prob_unhealthy': [p[0] for p in results['probabilities']],
-                'prob_healthy': [p[1] for p in results['probabilities']]
-            })
-            results_df.to_csv(os.path.join(save_dir, 'test_predictions.csv'), index=False)
-            print(f"Results saved to {save_dir}")
         
         return results
 

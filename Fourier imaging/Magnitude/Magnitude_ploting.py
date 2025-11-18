@@ -104,10 +104,14 @@ for day, df in enumerate(dataframes):
         # Perform 2D Fourier Transform
         data_2d, magnitude, phase = spatial_2d_fourier(data_1d)
 
-        # Plot and save the power spectrum without axes, ticks, or labels
-        plt.figure(figsize=(6, 6))
-        plt.imshow(np.log1p(magnitude), cmap='viridis', aspect='auto')
-        plt.axis('off')
-        plt.savefig(os.path.join(day_dir, f'{sample_id}_magnitude.png'))
+        # Plot and save the power spectrum without axes, ticks, labels, or margins
+        fig = plt.figure(figsize=(6, 6))
+        ax = plt.axes([0, 0, 1, 1])  # Create axes that fill the entire figure
+        ax.imshow(np.log1p(magnitude), cmap='viridis', aspect='auto')
+        ax.axis('off')
+        plt.savefig(os.path.join(day_dir, f'{sample_id}_magnitude.png'), 
+                    bbox_inches='tight', 
+                    pad_inches=0, 
+                    dpi=100)
         plt.close()
         
