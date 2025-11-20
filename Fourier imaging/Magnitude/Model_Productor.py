@@ -102,50 +102,41 @@ class PlantCNN(nn.Module):
         # Convolutional layers
         self.conv_layers = nn.Sequential(
             # Block 1
-            nn.Conv2d(3, 32, kernel_size=3, padding=0),
-            nn.BatchNorm2d(32),
-            nn.ReLU(),
-            nn.Conv2d(32, 32, kernel_size=3, padding=0),
-            nn.BatchNorm2d(32),
+            nn.Conv2d(3, 16, kernel_size=3, padding=1),
+            nn.BatchNorm2d(16),
             nn.ReLU(),
             nn.MaxPool2d(2, 2),
-            nn.Dropout2d(0.25),
             
             # Block 2
-            nn.Conv2d(32, 64, kernel_size=3, padding=0),
-            nn.BatchNorm2d(64),
-            nn.ReLU(),
-            nn.Conv2d(64, 64, kernel_size=3, padding=0),
-            nn.BatchNorm2d(64),
+            nn.Conv2d(16, 32, kernel_size=3, padding=1),
+            nn.BatchNorm2d(32),
             nn.ReLU(),
             nn.MaxPool2d(2, 2),
-            nn.Dropout2d(0.25),
             
             # Block 3
-            nn.Conv2d(64, 128, kernel_size=3, padding=0),
-            nn.BatchNorm2d(128),
-            nn.ReLU(),
-            nn.Conv2d(128, 128, kernel_size=3, padding=0),
-            nn.BatchNorm2d(128),
+            nn.Conv2d(32, 64, kernel_size=3, padding=1),
+            nn.BatchNorm2d(64),
             nn.ReLU(),
             nn.MaxPool2d(2, 2),
             nn.Dropout2d(0.25),
+
+            # Block 4
+            nn.Conv2d(64, 128, kernel_size=3, padding=1),
+            nn.BatchNorm2d(128),
+            nn.ReLU(),
+
+            # Global Average Pooling
+            nn.AdaptiveAvgPool2d((1, 1))
         )
         
-        # Calculate the size after conv layers (assuming 224x224 input)
-        # After 3 MaxPool2d layers: 224 -> 112 -> 56 -> 28
-        self.fc_input_size = 128 * 28 * 28
         
         # Fully connected layers
         self.fc_layers = nn.Sequential(
             nn.Flatten(),
-            nn.Linear(self.fc_input_size, 256),
+            nn.Linear(128, 64),
             nn.ReLU(),
-            nn.Dropout(dropout_rate),
-            nn.Linear(256, 128),
-            nn.ReLU(),
-            nn.Dropout(dropout_rate),
-            nn.Linear(128, num_classes)
+            nn.Dropout(dropout_rate), # High dropout because data is small
+            nn.Linear(64, num_classes)
         )
     
     def forward(self, x):
@@ -160,13 +151,13 @@ class CNNModelProductor:
     def __init__(self, 
                  days,
                  root_dir='c:/Users/ricar/Documents/GitHub/DiPreSi/Fourier imaging/Magnitude/Fourier_Images',
-                 img_size=224,
-                 batch_size=32,
+                 img_size=600,
+                 batch_size=16,
                  test_size=0.2,
                  val_size=0.1,
                  random_state=42,
                  num_epochs=50,
-                 learning_rate=0.001,
+                 learning_rate= 1e-4,
                  device=None):
         """
         Args:
@@ -201,19 +192,11 @@ class CNNModelProductor:
         
         # Define transforms
         self.train_transform = transforms.Compose([
-            transforms.Resize((img_size, img_size)),
-            transforms.RandomHorizontalFlip(),
-            transforms.RandomVerticalFlip(),
-            transforms.RandomRotation(15),
-            transforms.ColorJitter(brightness=0.2, contrast=0.2),
             transforms.ToTensor(),
-            transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
         ])
         
         self.test_transform = transforms.Compose([
-            transforms.Resize((img_size, img_size)),
             transforms.ToTensor(),
-            transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
         ])
         
         # Initialize model and training components
@@ -384,12 +367,12 @@ class CNNModelProductor:
         
         return epoch_loss, epoch_acc
     
-    def train_model(self, early_stopping_patience=10):
+    def train_model(self, max_epochs_without_improve=5):
         """Train the model"""
         print("\nStarting training...")
         best_val_acc = 0.0
-        patience_counter = 0
-        
+        epochs_without_improve = 0
+
         for epoch in range(self.num_epochs):
             # Train
             train_loss, train_acc = self.train_epoch()
@@ -408,18 +391,20 @@ class CNNModelProductor:
                   f"Train Loss: {train_loss:.4f}, Train Acc: {train_acc:.4f} | "
                   f"Val Loss: {val_loss:.4f}, Val Acc: {val_acc:.4f}")
             
+            if val_acc == best_val_acc:
+                epochs_without_improve += 1
+            else:
+                epochs_without_improve = 0
+                
+            if epochs_without_improve >= max_epochs_without_improve:
+                print(f"\nEarly stopping at epoch {epoch+1} due to no improvement in validation accuracy for {max_epochs_without_improve} consecutive epochs.")
+                break
+
             # Early stopping
             if val_acc > best_val_acc:
                 best_val_acc = val_acc
-                patience_counter = 0
-                # Save best model
                 self.best_model_state = self.model.state_dict().copy()
-            else:
-                patience_counter += 1
-            
-            if patience_counter >= early_stopping_patience:
-                print(f"\nEarly stopping triggered at epoch {epoch+1}")
-                break
+
         
         # Load best model
         self.model.load_state_dict(self.best_model_state)
@@ -586,12 +571,9 @@ class CNNModelProductor:
             results,
             save_path=os.path.join(save_dir, 'confusion_matrix.png') if save_dir else None
         )
-        
+
         # Save model
-        if save_dir is not None:
-            os.makedirs(save_dir, exist_ok = True)
-            self.save_model(os.path.join(save_dir, f'cnn_model_D{self.days}.pth'))
-            
-        
+
+
         return results
 
