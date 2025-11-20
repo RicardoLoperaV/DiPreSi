@@ -15,6 +15,8 @@ import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 from scipy.fft import fft2, fftshift
+# import SMOTE
+from imblearn.over_sampling import SMOTE
 
 # Instantiate the Template class
 Template = Template.Template()
@@ -47,22 +49,6 @@ for i, df in enumerate([df0, df1, df2, df3, df4, df5, df6, df7, df8, df9, df10, 
     if 'Planta' in df.columns:
         df.drop(columns=['Planta'], inplace=True)
 
-
-# lets take 2 samples of each dataframe to use as test data later and put them in the same csv file 
-test_samples = []
-for i, df in enumerate([df0, df1, df2, df3, df4, df5, df6, df7, df8, df9, df10, df11, df12, df13, df14, df15], start=0):
-    test_sample = df.sample(n=31, random_state=42)
-    test_sample.insert(0, 'Day', i)  # Add a column to identify from which sheet they come from
-    test_samples.append(test_sample)
-
-# concatenate all test samples into a single dataframe
-test_data = pd.concat(test_samples, ignore_index=True)
-
-# now remove the sampled rows from the original dataframes taking care to remove the 'Day' column first
-for i, (df, test_sample) in enumerate(zip([df0, df1, df2, df3, df4, df5, df6, df7, df8, df9, df10, df11, df12, df13, df14, df15], 
-                                            test_samples), start=0):
-    df_sample = test_sample.drop(columns=['Day'])
-    df.drop(df_sample.index, inplace=True)
 
 
 # Apply SMOTE to balance the 'Sana' class in each dataframe
