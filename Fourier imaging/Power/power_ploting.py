@@ -65,6 +65,36 @@ for i, (df, test_sample) in enumerate(zip([df0, df1, df2, df3, df4, df5, df6, df
     df.drop(df_sample.index, inplace=True)
 
 
+# Apply SMOTE to balance the 'Sana' class in each dataframe
+print("Applying SMOTE to balance classes...")
+smote = SMOTE(random_state=42)
+
+balanced_dataframes = []
+for i, df in enumerate([df0, df1, df2, df3, df4, df5, df6, df7, df8, df9, df10, df11, df12, df13, df14, df15]):
+    print(f"\nDay {i} - Before SMOTE:")
+    print(f"  Healthy: {(df['Sana'] == 1).sum()}, Unhealthy: {(df['Sana'] == 0).sum()}")
+    
+    # Separate features and target
+    X = df.drop(columns=['Sana'])
+    y = df['Sana']
+    
+    # Apply SMOTE
+    X_resampled, y_resampled = smote.fit_resample(X, y)
+    
+    # Create balanced dataframe
+    df_balanced = pd.DataFrame(X_resampled, columns=X.columns)
+    df_balanced.insert(0, 'Sana', y_resampled)
+    
+    print(f"Day {i} - After SMOTE:")
+    print(f"  Healthy: {(df_balanced['Sana'] == 1).sum()}, Unhealthy: {(df_balanced['Sana'] == 0).sum()}")
+    
+    balanced_dataframes.append(df_balanced)
+
+# Replace original dataframes with balanced ones
+df0, df1, df2, df3, df4, df5, df6, df7, df8, df9, df10, df11, df12, df13, df14, df15 = balanced_dataframes
+
+print("\nSMOTE balancing completed!\n")
+
 # Function to perform 2D Fourier Transform
 def spatial_2d_fourier(data_1d, grid_size='auto'):
     if grid_size == 'auto':
