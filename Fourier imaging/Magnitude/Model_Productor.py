@@ -182,13 +182,21 @@ class CNNModelProductor:
         self.num_epochs = num_epochs
         self.learning_rate = learning_rate
         
-        # Set device
+        # Set device with better checking
         if device is None:
-            self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+            if torch.cuda.is_available():
+                self.device = torch.device('cuda')
+                print(f"Using device: {self.device}")
+                print(f"GPU: {torch.cuda.get_device_name(0)}")
+                print(f"GPU Memory: {torch.cuda.get_device_properties(0).total_memory / 1024**3:.2f} GB")
+            else:
+                self.device = torch.device('cpu')
+                print(f"Using device: {self.device}")
+                print("WARNING: CUDA not available. Training will be slow on CPU.")
         else:
             self.device = device
+            print(f"Using device: {self.device}")
         
-        print(f"Using device: {self.device}")
         
         # Define transforms
         self.train_transform = transforms.Compose([
