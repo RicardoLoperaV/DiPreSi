@@ -244,6 +244,139 @@ El Nivel 2 es un meta-modelo que integra las predicciones generadas por los 15 m
 \end{figure}
 
 
+\section{Transformada de Fourier espacial 2D}
+
+Como parte de la estrategia experimental para optimizar el rendimiento del modelo, se implementó la Transformada de Fourier en 2D (2D-FFT) con el objetivo de analizar las características frecuenciales de las señales espectrales. Esta técnica permite la identificación de patrones latentes y tendencias no evidentes en el dominio espacial, facilitando, teóricamente, la extracción de descriptores discriminantes para la clasificación. Mediante la aplicación de la 2D-FFT, las señales espectrales fueron transformadas al dominio de la frecuencia, permitiendo aislar componentes periódicas y atenuar el ruido de alta frecuencia.
+
+Las salidas generadas por la 2D-FFT se interpretan como tensores de imágenes, los cuales se descomponen en los siguientes canales:
+
+\begin{itemize}
+    \item \textbf{Canal de Magnitud:} Representa la amplitud de las frecuencias presentes en la señal. Cabe destacar que, para la generación de las imágenes de este canal, se aplicó una transformación logarítmica de la forma $\log(1+x)$. Este preprocesamiento fue indispensable para comprimir el rango dinámico y resaltar características estructurales tenues, evitando así la generación de imágenes planas o con pérdida de información en las frecuencias de menor intensidad.
+    \item \textbf{Canal de Potencia:} Indica la densidad espectral de energía asociada a cada frecuencia, calculada como el cuadrado de la magnitud ($P = |Magnitud|^2$).
+    \item \textbf{Canal de Fase:} Describe el desplazamiento angular de las ondas componentes en el dominio de la frecuencia.
+    \item \textbf{Componente Real:} Corresponde a la parte real de los números complejos resultantes de la Transformada de Fourier.
+\end{itemize}
+
+La visualización de estos canales se presenta a continuación:
+
+\begin{figure}[H]
+    \centering 
+    \includegraphics[width=0.8\textwidth]{Imagenes/FFT_channels.png} 
+    \caption{Canales resultantes de la descomposición mediante Transformada de Fourier en 2D.} 
+    \label{fig:fft_channels}
+\end{figure}
+
+El experimento se centró en evaluar si los descriptores extraídos mediante la 2D-FFT aumentaban la capacidad discriminante del modelo; específicamente, se analizó el comportamiento de los canales de magnitud y potencia al ser utilizados como vectores de entrada.
+
+En las gráficas de magnitud se observaron, en ciertas muestras, diferencias cualitativas notables entre los espectros de plantas sanas y enfermas. Esto sugería inicialmente que dichas características frecuenciales podrían favorecer la clasificación. No obstante, se determinó que estas diferencias no son consistentes en la totalidad del conjunto de datos. Un ejemplo de este fenómeno se ilustra en la siguiente figura, correspondiente a una planta enferma del día 13:
+
+\begin{figure}[H]
+    \centering 
+    \includegraphics[width=0.8\textwidth]{Imagenes/FFT_healthy_vs_infected.png} 
+    \caption{Análisis comparativo de la 2D-FFT entre especímenes sanos e infectados.} 
+    \label{fig:fft_comparison}
+\end{figure}
+
+Pese a las observaciones visuales preliminares, los resultados experimentales no demostraron una mejora estadísticamente significativa en el rendimiento del modelo al incorporar las características de la 2D-FFT. Las métricas de evaluación (exactitud, precisión y sensibilidad) no presentaron incrementos sustanciales respecto al modelo base entrenado con las señales espectrales en el dominio original.
+
+Metodológicamente, los datos fueron sometidos primero a un balanceo de clases mediante la técnica SMOTE. Posteriormente, se les aplicó la Transformada de Fourier en 2D y, finalmente, se entrenó una Red Neuronal Convolucional (CNN) utilizando los canales de magnitud y potencia resultantes como tensores de entrada.
+
+
+
+\subsection{Arquitectura de la Red Neuronal Convolucional}
+
+La arquitectura del CNN implementada consta de dos componentes principales: una serie de capas convolucionales para la extracción de características y capas completamente conectadas para la clasificación final. A continuación se detalla cada componente:
+
+\subsubsection{Bloque de Capas Convolucionales}
+
+El modelo procesa imágenes RGB de entrada (3 canales) mediante cuatro bloques convolucionales secuenciales:
+
+\textbf{Bloque 1:}
+\begin{itemize}
+    \item Capa Convolucional: 16 filtros de 3$\times$3 con padding=1
+    \item Normalización por Lotes (BatchNorm2d)
+    \item Función de Activación: ReLU
+    \item Max Pooling: 2$\times$2 (reduce dimensiones espaciales a la mitad)
+\end{itemize}
+
+\textbf{Bloque 2:}
+\begin{itemize}
+    \item Capa Convolucional: 32 filtros de 3$\times$3 con padding=1
+    \item Normalización por Lotes (BatchNorm2d)
+    \item Función de Activación: ReLU
+    \item Max Pooling: 2$\times$2
+\end{itemize}
+
+\textbf{Bloque 3:}
+\begin{itemize}
+    \item Capa Convolucional: 64 filtros de 3$\times$3 con padding=1
+    \item Normalización por Lotes (BatchNorm2d)
+    \item Función de Activación: ReLU
+    \item Max Pooling: 2$\times$2
+    \item Dropout2d: 25\% (regularización espacial)
+\end{itemize}
+
+\textbf{Bloque 4:}
+\begin{itemize}
+    \item Capa Convolucional: 128 filtros de 3$\times$3 con padding=1
+    \item Normalización por Lotes (BatchNorm2d)
+    \item Función de Activación: ReLU
+    \item Global Average Pooling: AdaptiveAvgPool2d(1$\times$1) (convierte el mapa de características en un vector de 128 elementos)
+\end{itemize}
+
+\subsubsection{Bloque de Capas Completamente Conectadas}
+
+Tras la extracción de características, el vector resultante se procesa mediante:
+
+\begin{itemize}
+    \item Aplanamiento (Flatten): Convierte el tensor 128$\times$1$\times$1 en un vector de 128 elementos
+    \item Capa Densa 1: 128 $\rightarrow$ 64 neuronas
+    \item Función de Activación: ReLU
+    \item Dropout: 50\% (alto dropout debido al tamaño reducido del dataset)
+    \item Capa de Salida: 64 $\rightarrow$ 2 neuronas (clasificación binaria: Sana/Infectada)
+\end{itemize}
+
+\subsubsection{Características de Diseño}
+
+La arquitectura implementa varias técnicas de regularización para prevenir el sobreajuste:
+
+\begin{enumerate}
+    \item \textbf{Normalización por Lotes:} Aplicada en cada bloque convolucional para estabilizar y acelerar el entrenamiento.
+    \item \textbf{Dropout Espacial:} 25\% en el tercer bloque convolucional para reducir correlaciones espaciales.
+    \item \textbf{Dropout Denso:} 50\% en la capa completamente conectada, especialmente alto debido al tamaño limitado del conjunto de datos.
+    \item \textbf{Global Average Pooling:} Reduce drásticamente el número de parámetros en comparación con capas completamente conectadas de gran tamaño, minimizando el riesgo de sobreajuste.
+\end{enumerate}
+
+El número total de parámetros entrenables del modelo es relativamente bajo en comparación con arquitecturas CNN estándar (ResNet, VGG), lo cual es apropiado para el tamaño del dataset disponible. La arquitectura progresiva (16$\rightarrow$32$\rightarrow$64$\rightarrow$128 filtros) permite capturar características de diferentes niveles de abstracción, desde bordes y texturas básicas hasta patrones complejos específicos de las plantas infectadas.
+
+\subsubsection{Entrenamiento y Optimización}
+
+El modelo se entrenó utilizando los siguientes hiperparámetros:
+
+\begin{itemize}
+    \item \textbf{Función de Pérdida:} CrossEntropyLoss
+    \item \textbf{Optimizador:} Adam con tasa de aprendizaje de $1\times10^{-4}$
+    \item \textbf{Batch Size:} 16 muestras
+    \item \textbf{Épocas Máximas:} 50
+    \item \textbf{Early Stopping:} Se detiene el entrenamiento si no hay mejora en la exactitud de validación durante 5 épocas consecutivas
+    \item \textbf{División de Datos:} 80\% entrenamiento, 10\% validación, 10\% prueba
+\end{itemize}
+
+A pesar de este enfoque, los resultados no indicaron mejoras significativas en las métricas de rendimiento del modelo en comparación con el modelo base de Regresión Logística con PCA.
+
+\subsection{Resultados modelos de magnitud}
+
+Para la magnitud, los resultados obtenidos fueron los siguientes:
+
+
+
+
+
+
+
+
+
+
 % -----------------------------------------------------------------
 
 \end{document}

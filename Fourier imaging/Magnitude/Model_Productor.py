@@ -459,7 +459,12 @@ class CNNModelProductor:
         print(f"Recall: {recall:.4f}")
         print(f"F1-Score: {f1:.4f}")
         
-        # Classification report
+        # Classification report as dictionary - THIS WAS MISSING!
+        class_report_dict = classification_report(all_labels, all_predictions, 
+                                                   target_names=['Unhealthy', 'Healthy'],
+                                                   output_dict=True)
+        
+        # Classification report (print version)
         print("\nClassification Report:")
         print(classification_report(all_labels, all_predictions, 
                                     target_names=['Unhealthy', 'Healthy']))
@@ -477,6 +482,7 @@ class CNNModelProductor:
             'recall': recall,
             'f1_score': f1,
             'confusion_matrix': cm,
+            'classification_report': class_report_dict,  # ADDED THIS LINE
             'predictions': all_predictions,
             'labels': all_labels,
             'probabilities': all_probabilities,
