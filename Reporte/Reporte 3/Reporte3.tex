@@ -1,0 +1,226 @@
+\documentclass[12pt, letterpaper]{article}
+
+% --- Paquetes de Configuración ---
+\usepackage[utf8]{inputenc}
+\usepackage[spanish, es-tabla]{babel} 
+\usepackage{geometry}
+\geometry{left=2.5cm, right=2.5cm, top=2.5cm, bottom=2.5cm}
+\usepackage{amsmath} % Para el comando \text{} en modo matemático
+
+% --- Paquetes para Elementos Visuales ---
+\usepackage{graphicx} 
+\usepackage{booktabs}                               
+\usepackage{float}
+% --- Información del Título ---
+\title{\textbf{Informe de Avance: cambio relativo espectral en plantas}}
+\author{Ricardo Esteban Lopera Vasco}
+\date{\today}
+
+\begin{document}
+
+% Portada
+\maketitle  
+\newpage
+
+
+% =============================================================================
+% ANÁLISIS DE CAMBIO RELATIVO ESPECTRAL EN PLANTAS
+% =============================================================================
+
+\section{Análisis de Cambio Relativo Espectral}
+\label{sec:cambio_relativo}
+
+Este capítulo presenta la metodología y resultados del análisis de cambio relativo espectral, una técnica diseñada para cuantificar las variaciones en la reflectancia de plantas sometidas a diferentes tratamientos experimentales respecto a un grupo de referencia (control).
+
+% -----------------------------------------------------------------------------
+\subsection{Selección de Longitudes de Onda de Referencia}
+\label{subsec:ref_wavelengths}
+
+\subsubsection{Metodología de Selección}
+
+La selección de las longitudes de onda de referencia se fundamenta en el establecimiento de una línea base espectral representativa del estado fisiológico normal de las plantas. Para ello, se utilizó exclusivamente el conjunto de datos correspondiente al grupo control (\texttt{df0}), el cual contiene las mediciones espectrales de plantas no sometidas a ningún tratamiento experimental.
+
+El proceso de selección se implementó mediante los siguientes pasos:
+
+\begin{enumerate}
+    \item \textbf{Filtrado del grupo control:} Se extrajo un subconjunto del dataframe \texttt{df0} conteniendo únicamente las observaciones correspondientes al tratamiento ``Control'':
+    \begin{verbatim}
+    RefDf = df0[(df0['Tratamiento'] == 'Control')]
+    \end{verbatim}
+    
+    \item \textbf{Extracción de datos espectrales:} Se aislaron las columnas que contienen los valores de reflectancia para cada longitud de onda, excluyendo las columnas de metadatos (``Tratamiento'' y ``Planta''):
+    \begin{verbatim}
+    data_cols = RefDf.iloc[:, 2:]
+    \end{verbatim}
+    
+    \item \textbf{Cálculo del espectro de referencia:} Se computó la media aritmética de los valores de reflectancia para cada longitud de onda $\lambda$ a través de todas las plantas control:
+    \begin{verbatim}
+    REF = data_cols.mean()
+    \end{verbatim}
+\end{enumerate}
+
+\subsubsection{Justificación Estadística}
+
+La utilización de la media como estadístico de referencia se justifica por las siguientes razones:
+
+\begin{itemize}
+    \item \textbf{Representatividad central:} La media proporciona el valor esperado de la distribución de reflectancias para cada longitud de onda, representando el comportamiento espectral típico de una planta sana bajo condiciones normales.
+    
+    \item \textbf{Sensibilidad a desviaciones:} Al emplear la media como referencia, cualquier desviación en las plantas tratadas se cuantifica directamente respecto al valor central de la distribución control, permitiendo detectar tanto aumentos como disminuciones en la reflectancia.
+    
+    \item \textbf{Robustez estadística:} Dado que se promedian múltiples observaciones del grupo control, el espectro de referencia \texttt{REF} mitiga el efecto de variaciones aleatorias individuales, proporcionando una estimación más estable del comportamiento espectral basal.
+\end{itemize}
+
+Matemáticamente, el valor de referencia para cada longitud de onda $\lambda_i$ se define como:
+
+\begin{equation}
+    \text{REF}(\lambda_i) = \frac{1}{n} \sum_{j=1}^{n} R_{j}(\lambda_i)
+    \label{eq:ref_mean}
+\end{equation}
+
+donde $R_{j}(\lambda_i)$ representa la reflectancia de la planta $j$ del grupo control en la longitud de onda $\lambda_i$, y $n$ es el número total de plantas en el grupo control.
+
+\begin{figure}[h]
+    \centering
+    \includegraphics[width=0.8\textwidth]{figures/control_reflectance.png}
+    \caption{Reflectancia promedio del grupo control (df0) a lo largo del espectro electromagnético.}
+    \label{fig:control_reflectance}
+\end{figure}
+
+% -----------------------------------------------------------------------------
+\subsection{Metodología del Cambio Relativo}
+\label{subsec:rel_change_method}
+
+\subsubsection{Formulación Matemática}
+
+El cambio relativo constituye una métrica normalizada que cuantifica la magnitud de la desviación espectral de una muestra respecto al espectro de referencia. La formulación implementada en el análisis se define como:
+
+\begin{equation}
+    \Delta \lambda_{\text{rel}} = \frac{|\lambda_{\text{sample}} - \lambda_{\text{Reference}}|}{\lambda_{\text{Reference}}}
+    \label{eq:rel_change}
+\end{equation}
+
+donde:
+\begin{itemize}
+    \item $\Delta \lambda_{\text{rel}}$ representa el cambio relativo adimensional
+    \item $\lambda_{\text{sample}}$ es el valor de reflectancia de la muestra en una longitud de onda específica
+    \item $\lambda_{\text{Reference}}$ es el valor de referencia (media del control) para la misma longitud de onda
+\end{itemize}
+
+Para consolidar las múltiples mediciones de una planta en un único valor por longitud de onda, se calcula la magnitud euclidiana de los cambios relativos individuales:
+
+\begin{equation}
+    M(\lambda_i) = \sqrt{\sum_{k=1}^{m} \left( \frac{|v_k - \text{REF}(\lambda_i)|}{\text{REF}(\lambda_i)} \right)^2}
+    \label{eq:magnitude}
+\end{equation}
+
+donde $v_k$ representa cada valor observado y $m$ es el número de observaciones para la planta en cuestión.
+
+\subsubsection{Implementación Computacional}
+
+El cálculo se implementó iterando sobre cada tratamiento y planta, procesando cada columna espectral de manera independiente:
+
+\begin{verbatim}
+for col in data_cols.columns:
+    values = data_cols[col].values
+    REF_value = REF[col]
+    
+    if REF_value != 0:
+        differences = np.abs(values - REF_value) / REF_value
+        magnitude = np.sqrt(np.sum(differences**2))
+    else:
+        magnitude = np.nan
+    
+    magnitudes.append(magnitude)
+\end{verbatim}
+
+\subsubsection{Justificación de la Métrica}
+
+La elección del cambio relativo como métrica de análisis se fundamenta en las siguientes consideraciones:
+
+\begin{enumerate}
+    \item \textbf{Normalización contra variabilidad basal:} Al dividir por el valor de referencia, la métrica compensa las diferencias inherentes en la magnitud absoluta de la reflectancia entre diferentes regiones del espectro. Esto permite comparar directamente cambios en longitudes de onda con valores base muy distintos.
+    
+    \item \textbf{Detección de respuestas al estrés:} Las plantas sometidas a estrés biótico o abiótico exhiben alteraciones en su firma espectral, particularmente en regiones asociadas con pigmentos fotosintéticos, contenido de agua y estructura celular. El cambio relativo amplifica estas señales de estrés al expresarlas como proporción del estado basal.
+    
+    \item \textbf{Interpretabilidad:} Un valor de $\Delta \lambda_{\text{rel}} = 0.1$ indica una desviación del 10\% respecto al control, facilitando la interpretación biológica de los resultados.
+    
+    \item \textbf{Uso del valor absoluto:} La implementación utiliza $|\lambda_{\text{sample}} - \lambda_{\text{Reference}}|$, lo cual cuantifica la magnitud de la desviación independientemente de su dirección. Esto es apropiado cuando el objetivo es detectar cualquier perturbación respecto al estado normal, sin distinguir entre aumentos y disminuciones de reflectancia.
+\end{enumerate}
+
+% -----------------------------------------------------------------------------
+\subsection{Análisis de Resultados: Cambio Relativo Promedio}
+\label{subsec:results_analysis}
+
+\subsubsection{Agregación por Tratamiento}
+
+Para obtener una visión consolidada del efecto de cada tratamiento, se calculó el cambio relativo promedio agrupando las observaciones por tipo de tratamiento:
+
+\begin{verbatim}
+df_means = df_all_magnitudes.groupby('Tratamiento').mean()
+\end{verbatim}
+
+Esta agregación permite comparar directamente el perfil espectral de cambio relativo entre los diferentes grupos experimentales, suavizando la variabilidad inter-individual dentro de cada tratamiento.
+
+\subsubsection{Interpretación de Tendencias}
+
+El análisis del cambio relativo promedio revela patrones distintivos para cada tratamiento experimental:
+
+\begin{itemize}
+    \item \textbf{Valores cercanos a cero:} Indican que el tratamiento no produce alteraciones significativas en la reflectancia espectral respecto al control. Esto sugiere que el tratamiento no afecta los procesos fisiológicos que determinan las propiedades ópticas de la planta.
+    
+    \item \textbf{Valores positivos elevados:} Señalan regiones espectrales donde el tratamiento induce cambios sustanciales. En el contexto biológico:
+    \begin{itemize}
+        \item Cambios en la región visible (400-700 nm) pueden indicar alteraciones en el contenido de clorofila, carotenoides u otros pigmentos.
+        \item Cambios en el infrarrojo cercano (700-1300 nm) sugieren modificaciones en la estructura celular del mesófilo.
+        \item Cambios en el infrarrojo de onda corta (1300-2500 nm) están asociados con variaciones en el contenido de agua y compuestos bioquímicos.
+    \end{itemize}
+    
+    \item \textbf{Diferencias entre tratamientos:} La magnitud relativa del cambio entre tratamientos permite establecer un ranking de severidad del efecto, donde tratamientos con mayores valores de $\Delta \lambda_{\text{rel}}$ representan perturbaciones más intensas del estado fisiológico normal.
+\end{itemize}
+
+\begin{figure}[h]
+    \centering
+    \includegraphics[width=0.9\textwidth]{figures/relative_change_all_treatments.png}
+    \caption{Cambio relativo promedio por tratamiento respecto a la referencia a lo largo del espectro completo.}
+    \label{fig:rel_change_full}
+\end{figure}
+
+\subsubsection{Análisis por Rangos Espectrales Clave}
+
+Para un análisis más detallado, se segmentó el espectro en cuatro regiones de interés fisiológico:
+
+\begin{enumerate}
+    \item \textbf{VIS-NIR (500-750 nm):} Región dominada por la absorción de pigmentos fotosintéticos. Cambios en esta zona reflejan alteraciones en el aparato fotosintético.
+    
+    \item \textbf{SWIR-1 (1300-1600 nm):} Sensible al contenido de agua foliar y estructura celular. Variaciones indican estrés hídrico o cambios en la turgencia celular.
+    
+    \item \textbf{SWIR-2 (1800-2200 nm):} Asociada con bandas de absorción de agua y compuestos orgánicos como celulosa, lignina y proteínas.
+    
+    \item \textbf{SWIR-3 (2300-2500 nm):} Región sensible a compuestos bioquímicos específicos y contenido de agua residual.
+\end{enumerate}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.98\textwidth]{figures/spectral_ranges_analysis.png}
+    \caption{Análisis del cambio relativo promedio por rangos espectrales clave. }
+    \label{fig:spectral_ranges}
+\end{figure}
+
+\subsubsection{Conclusiones del Análisis}
+
+El análisis de cambio relativo permite establecer las siguientes observaciones:
+
+\begin{itemize}
+    \item La metodología implementada proporciona una cuantificación objetiva y normalizada de las perturbaciones espectrales inducidas por los tratamientos experimentales.
+    
+    \item Las regiones espectrales con mayor discriminación entre tratamientos constituyen potenciales biomarcadores para la detección temprana de estrés vegetal.
+    
+    \item La agregación por tratamiento revela patrones consistentes que validan la sensibilidad de la técnica espectroscópica para caracterizar respuestas fisiológicas.
+    
+    \item El marco metodológico establecido sienta las bases para el desarrollo de modelos predictivos de clasificación basados en firmas espectrales de cambio relativo.
+\end{itemize}
+
+% =============================================================================
+
+\end{document}
