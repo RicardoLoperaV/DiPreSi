@@ -1,0 +1,40 @@
+{
+    "Logistic Regression": {
+        "model__C": 0.1,
+        "model__class_weight": "balanced",
+        "model__l1_ratio": 0.2,
+        "model__penalty": "elasticnet",
+        "model__solver": "saga",
+        "pca__n_components": 50
+    },
+    "SVM": {
+        "pca__n_components": 30,
+        "svm__C": 100,
+        "svm__class_weight": "balanced",
+        "svm__gamma": 0.1,
+        "svm__kernel": "linear"
+    },
+    "Random Forest": {
+        "pca__n_components": 30,
+        "rf__class_weight": null,
+        "rf__max_depth": 10,
+        "rf__min_samples_leaf": 2,
+        "rf__min_samples_split": 10,
+        "rf__n_estimators": 50
+    },
+    "Gradient Boosting": {
+        "gb__learning_rate": 0.2,
+        "gb__max_depth": 7,
+        "gb__min_samples_leaf": 1,
+        "gb__min_samples_split": 10,
+        "gb__n_estimators": 100,
+        "pca__n_components": 50
+    },
+    "KNN": {
+        "knn__metric": "minkowski",
+        "knn__n_neighbors": 15,
+        "knn__p": 1,
+        "knn__weights": "distance",
+        "pca__n_components": 50
+    }
+}
