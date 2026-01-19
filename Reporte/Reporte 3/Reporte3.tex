@@ -222,5 +222,119 @@ El análisis de cambio relativo permite establecer las siguientes observaciones:
 \end{itemize}
 
 % =============================================================================
+% RESULTADOS: MODELOS DE CLASIFICACIÓN
+% =============================================================================
+
+\section{Resultados: Clasificación Biótico vs Abiótico}
+\label{sec:resultados_clasificacion}
+
+Esta sección presenta los resultados obtenidos de la evaluación comparativa de cinco algoritmos de aprendizaje automático para la clasificación binaria de estrés vegetal (biótico vs abiótico), utilizando las características de cambio relativo espectral como variables predictoras.
+
+% -----------------------------------------------------------------------------
+\subsection{Configuración Experimental}
+\label{subsec:config_experimental}
+
+Se implementó un pipeline de procesamiento que integra estandarización de datos, reducción de dimensionalidad mediante Análisis de Componentes Principales (PCA) y clasificación. Los hiperparámetros óptimos para cada modelo se determinaron mediante búsqueda exhaustiva en rejilla (GridSearchCV) con validación cruzada de 5 particiones, utilizando \textit{balanced accuracy} como métrica de optimización.
+
+Los modelos evaluados fueron:
+\begin{enumerate}
+    \item Regresión Logística con regularización L1, L2 y ElasticNet
+    \item Máquina de Vectores de Soporte (SVM) con kernels lineal y RBF
+    \item Bosque Aleatorio (Random Forest)
+    \item Gradient Boosting
+    \item K-Vecinos más Cercanos (KNN)
+\end{enumerate}
+
+% -----------------------------------------------------------------------------
+\subsection{Comparación de Rendimiento de Modelos}
+\label{subsec:comparacion_modelos}
+
+La Tabla~\ref{tab:model_comparison} presenta las métricas de rendimiento obtenidas para cada clasificador. Se reportan tres métricas: el puntaje de validación cruzada (CV Score), la exactitud sobre el conjunto de prueba (Test Accuracy) y el puntaje F1 ponderado (Test F1 Score).
+
+\begin{table}[H]
+    \centering
+    \caption{Comparación de rendimiento de modelos para clasificación Biótico vs Abiótico basada en cambio relativo espectral. }
+    \label{tab:model_comparison}
+    \begin{tabular}{lccc}
+        \toprule
+        \textbf{Modelo} & \textbf{CV Score} & \textbf{Test Accuracy} & \textbf{Test F1 Score} \\
+        \midrule
+        SVM                 & 0.7715 & 0.8644 & 0.8644 \\
+        Random Forest       & 0.7962 & 0.8475 & 0.8475 \\
+        Gradient Boosting   & 0.8071 & 0.8475 & 0.8472 \\
+        Regresión Logística & 0.7692 & 0.8136 & 0.8136 \\
+        KNN                 & 0.7364 & 0.7797 & 0.7795 \\
+        \bottomrule
+    \end{tabular}
+\end{table}
+
+\subsubsection{Análisis de Resultados}
+
+Los resultados cuantitativos presentados en la Tabla~\ref{tab:model_comparison} permiten establecer las siguientes observaciones:
+
+\begin{itemize}
+    \item \textbf{Modelo de mejor rendimiento:} La Máquina de Vectores de Soporte (SVM) alcanzó el desempeño más alto en el conjunto de prueba, con una exactitud y puntaje F1 de 0.8644 (86.44\%). Este resultado posiciona a SVM como el clasificador más efectivo para la discriminación entre estrés biótico y abiótico utilizando características de cambio relativo espectral.
+    
+    \item \textbf{Discrepancia entre validación cruzada y prueba:} Se observa un patrón notable donde todos los modelos exhiben rendimientos superiores en el conjunto de prueba respecto a sus puntajes de validación cruzada. Gradient Boosting presenta el CV Score más alto (0.8071), sin embargo, su exactitud de prueba (0.8475) es inferior a la de SVM. Esta inversión sugiere que el CV Score más conservador de SVM (0.7715) refleja una estimación más robusta de su capacidad de generalización.
+    
+    \item \textbf{Rendimiento de métodos ensemble:} Random Forest y Gradient Boosting obtuvieron exactitudes de prueba idénticas (0.8475), aunque Gradient Boosting mostró una ligera ventaja en validación cruzada (0.8071 vs 0.7962). La diferencia marginal en sus puntajes F1 (0.8475 vs 0.8472) indica comportamientos predictivos prácticamente equivalentes.
+    
+    \item \textbf{Rendimiento inferior de KNN:} El clasificador K-Vecinos más Cercanos presentó el desempeño más bajo, con una exactitud de 0.7797 y F1 de 0.7795. La diferencia de 8.5 puntos porcentuales respecto a SVM sugiere que la estructura del espacio de características de cambio relativo favorece clasificadores basados en hiperplanos de separación sobre métodos basados en distancia local.
+    
+    \item \textbf{Regresión Logística como línea base:} Con una exactitud de 0.8136, la Regresión Logística proporciona un rendimiento intermedio que valida la separabilidad lineal parcial de las clases en el espacio reducido por PCA, aunque los métodos no lineales (SVM con kernel RBF, Random Forest) logran capturar patrones adicionales que mejoran la clasificación.
+\end{itemize}
+
+% -----------------------------------------------------------------------------
+\subsection{Visualización Comparativa}
+\label{subsec:visualizacion}
+
+Para facilitar la interpretación de los resultados, se generaron representaciones gráficas del rendimiento de los clasificadores.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.95\textwidth]{figures/confusion_matrices_comparison}
+    \caption{Matrices de confusión para los cinco modelos evaluados. Cada matriz muestra la distribución de predicciones correctas e incorrectas para las clases Abiótico y Biótico. Los valores en la diagonal principal representan clasificaciones correctas.}
+    \label{fig:confusion_matrices}
+\end{figure}
+
+Las matrices de confusión (Figura~\ref{fig:confusion_matrices}) permiten evaluar el comportamiento de cada clasificador respecto a errores de tipo I (falsos positivos) y tipo II (falsos negativos). Un modelo óptimo exhibiría valores elevados en la diagonal principal y valores cercanos a cero en las celdas fuera de la diagonal.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.9\textwidth]{figures/bar_chart_comparison}
+    \caption{Comparación de métricas de rendimiento (CV Score, Test Accuracy y Test F1 Score) para cada modelo de clasificación. Las barras permiten una comparación visual directa entre algoritmos.}
+    \label{fig:bar_comparison}
+\end{figure}
+
+El gráfico de barras comparativo (Figura~\ref{fig:bar_comparison}) sintetiza las tres métricas de evaluación, facilitando la identificación del modelo con mejor balance entre rendimiento en validación cruzada y generalización al conjunto de prueba.
+
+% -----------------------------------------------------------------------------
+\subsection{Selección del Modelo Óptimo}
+\label{subsec:modelo_optimo}
+
+Con base en el análisis comparativo presentado, se selecciona la \textbf{Máquina de Vectores de Soporte (SVM)} como el modelo óptimo para la clasificación de estrés biótico vs abiótico. Esta selección se fundamenta en los siguientes criterios:
+
+\begin{enumerate}
+    \item \textbf{Máximo rendimiento en prueba:} SVM alcanzó la exactitud más alta (86.44\%) y el puntaje F1 más elevado (0.8644) sobre el conjunto de prueba independiente, superando al segundo mejor modelo (Random Forest) por 1.69 puntos porcentuales.
+    
+    \item \textbf{Capacidad de generalización:} A pesar de presentar un CV Score moderado (0.7715), SVM demostró la mejor transferencia de aprendizaje al conjunto de prueba. La diferencia positiva de 9.29 puntos porcentuales entre Test Accuracy y CV Score indica que el modelo no presenta sobreajuste y generaliza efectivamente a datos no vistos.
+    
+    \item \textbf{Robustez frente a métodos ensemble:} Aunque Gradient Boosting obtuvo el CV Score más alto (0.8071), su rendimiento de prueba (0.8475) fue inferior al de SVM. Esto sugiere que la complejidad adicional de los métodos ensemble no aporta beneficios para este problema específico, mientras que SVM logra una representación más eficiente del límite de decisión entre clases.
+    
+    \item \textbf{Eficiencia computacional:} SVM con kernel RBF proporciona un balance óptimo entre complejidad del modelo y rendimiento predictivo, requiriendo menos parámetros que Random Forest (número de árboles, profundidad) o Gradient Boosting (tasa de aprendizaje, número de estimadores).
+\end{enumerate}
+
+\subsubsection{Configuración del Modelo Seleccionado}
+
+Los hiperparámetros óptimos identificados mediante GridSearchCV para el modelo SVM fueron almacenados en el archivo \texttt{best\_model\_parameters.json}. El pipeline final integra:
+
+\begin{itemize}
+    \item Estandarización de características mediante \texttt{StandardScaler}
+    \item Reducción de dimensionalidad con PCA (número de componentes optimizado)
+    \item Clasificador SVM con parámetros de regularización ($C$) y kernel optimizados
+\end{itemize}
+
+
+% =============================================================================
 
 \end{document}
